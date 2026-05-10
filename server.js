@@ -59,6 +59,7 @@ app.get('/api/tickets/info/:ticketId', ticketController.getTicketInfo);
 app.get('/api/admin/recent-tickets', ticketController.getRecentTickets);
 app.get('/api/admin/trash-tickets', ticketController.getTrashTickets);
 app.put('/api/admin/restore-ticket/:id', ticketController.restoreTicket);
+app.delete('/api/admin/delete-ticket/:id', ticketController.deleteTicket);
 app.get('/', (req, res) => {
     res.json({
         status: 'online',
@@ -66,6 +67,7 @@ app.get('/', (req, res) => {
         version: '1.0.0'
     });
 });
+
 
 
 // Database Sync and Server Initialization
