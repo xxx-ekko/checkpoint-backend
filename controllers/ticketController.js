@@ -124,22 +124,25 @@ const generateTicket = async (req, res) => {
     try {
         const { firstName, lastName } = req.body;
 
-        // 1. Combine first and last name to match your database schema
+        // Combine first and last name to match database schema
         const fullName = `${firstName} ${lastName}`.trim();
+        // Generate a fake email to bypass the notNull constraint
         const fakeEmail = `wa-${Date.now()}@checkpoint.local`;
 
-        // 2. Save the ticket to your PostgreSQL database FIRST to get the real ID
+        // Save the ticket to PostgreSQL to get the real ID
         const newTicket = await Ticket.create({
             attendeeName: fullName,
-            email: fakeEmail, // Bypass the notNull constraint
+            email: fakeEmail,
             status: 'VALID'
         });
 
-        // 3. Format the URL using the REAL database ID (newTicket.id)
-        const frontendUrl = process.env.FRONTEND_URL;
-        const scannerUrl = `${frontendUrl}/scanner/${ticketId}`;
+        // Get frontend URL from env or fallback to production URL
+        const frontendUrl = process.env.FRONTEND_URL || 'https://www.le-checkpoint.com';
 
-        // 4. Generate the QR code image
+        // Use newTicket.id here, NOT ticketId!
+        const scannerUrl = `${frontendUrl}/scanner/${newTicket.id}`;
+
+        // Generate the QR code image
         const qrCodeImage = await QRCode.toDataURL(scannerUrl, {
             color: {
                 dark: '#9E1B1B',  // Checkpoint Red
@@ -151,7 +154,7 @@ const generateTicket = async (req, res) => {
 
         console.log(`[+] Ticket created for ${fullName} with DB ID: ${newTicket.id}`);
 
-        // 5. Send back to React
+        // Send response back to frontend
         res.json({
             success: true,
             qrCode: qrCodeImage,
