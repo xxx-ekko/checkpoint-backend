@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Resend } = require('resend');
+const QRCode = require('qrcode'); // FIX: Added the missing QRCode import
 const Ticket = require('../models/Ticket'); // Make sure this path is correct for your project
 
 // Initialize Resend securely using the environment variable
@@ -118,8 +119,152 @@ const verifyTicket = async (req, res) => {
     }
 };
 
-// Exporting with the exact names your server.js expects
+// Generate a ticket manually from the Admin panel
+const generateTicket = async (req, res) => {
+    try {
+        const { firstName, lastName } = req.body;
+
+        // 1. Combine first and last name to match your database schema
+        const fullName = `${firstName} ${lastName}`.trim();
+        const fakeEmail = `wa-${Date.now()}@checkpoint.local`;
+
+        // 2. Save the ticket to your PostgreSQL database FIRST to get the real ID
+        const newTicket = await Ticket.create({
+            attendeeName: fullName,
+            email: fakeEmail, // Bypass the notNull constraint
+            status: 'VALID'
+        });
+
+        // 3. Format the URL using the REAL database ID (newTicket.id)
+        const scannerUrl = `http://localhost:5173/scanner/${newTicket.id}`;
+
+        // 4. Generate the QR code image
+        const qrCodeImage = await QRCode.toDataURL(scannerUrl, {
+            color: {
+                dark: '#9E1B1B',  // Checkpoint Red
+                light: '#ffffff'  // White background
+            },
+            width: 300,
+            margin: 2
+        });
+
+        console.log(`[+] Ticket created for ${fullName} with DB ID: ${newTicket.id}`);
+
+        // 5. Send back to React
+        res.json({
+            success: true,
+            qrCode: qrCodeImage,
+            ticketId: newTicket.id
+        });
+
+    } catch (error) {
+        console.error('Error generating ticket:', error);
+        res.status(500).json({ success: false, message: 'Server error during generation' });
+    }
+};
+
+// Fetch ticket information for the scanner verification page
+const getTicketInfo = async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+
+        // Use findByPk to match how your DB handles IDs (just like verifyTicket does)
+        const ticket = await Ticket.findByPk(ticketId);
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Ticket introuvable" });
+        }
+
+        res.json({
+            success: true,
+            ticket: ticket
+        });
+
+    } catch (error) {
+        console.error('Error fetching ticket info:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// Change deleteTicket to perform a "Soft Delete" (Move to trash)
+const deleteTicket = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const ticket = await Ticket.findByPk(id);
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Ticket introuvable" });
+        }
+
+        // Instead of destroy(), we change the status
+        ticket.status = 'DELETED';
+        await ticket.save();
+
+        res.json({ success: true, message: "Ticket mis à la corbeille" });
+    } catch (error) {
+        console.error('Error deleting ticket:', error);
+        res.status(500).json({ success: false, message: 'Server error during deletion' });
+    }
+};
+
+// Fetch tickets that are in the trash
+const getTrashTickets = async (req, res) => {
+    try {
+        const tickets = await Ticket.findAll({
+            where: { status: 'DELETED' },
+            order: [['updatedAt', 'DESC']]
+        });
+        res.json({ success: true, tickets: tickets });
+    } catch (error) {
+        console.error('Error fetching trash:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// Restore a ticket from the trash
+const restoreTicket = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const ticket = await Ticket.findByPk(id);
+
+        if (!ticket) {
+            return res.status(404).json({ success: false, message: "Ticket introuvable" });
+        }
+
+        // Set status back to VALID
+        ticket.status = 'VALID';
+        await ticket.save();
+
+        res.json({ success: true, message: "Ticket restauré" });
+    } catch (error) {
+        console.error('Error restoring ticket:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// Modifie aussi getRecentTickets pour ne pas afficher ceux de la corbeille !
+const getRecentTickets = async (req, res) => {
+    try {
+        const tickets = await Ticket.findAll({
+            where: { status: 'VALID' }, // ONLY SHOW VALID ONES HERE
+            order: [['createdAt', 'DESC']],
+            limit: 10
+        });
+        res.json({ success: true, tickets: tickets });
+    } catch (error) {
+        console.error('Error fetching recent tickets:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// FIX: Exporting ALL functions properly in a single object at the end of the file
 module.exports = {
     createTicket,
-    verifyTicket
+    verifyTicket,
+    generateTicket,
+    getTicketInfo,
+    getRecentTickets,
+    deleteTicket,
+    getTrashTickets,
+    restoreTicket
 };

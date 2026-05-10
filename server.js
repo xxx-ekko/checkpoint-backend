@@ -33,12 +33,11 @@ app.use('/api/', apiLimiter);
 
 // Configure CORS for production to only allow specific domains
 const corsOptions = {
-    // Allow localhost for development, and your future domain for production
     origin: [
         'http://localhost:5173',
         'https://localhost:5173',
-        // 'https://www.your-domain.com', // TODO: Uncomment and add your Hostinger domain here
-        // 'https://your-domain.com'
+        'http://192.168.1.18:5173',
+        'https://www.le-checkpoint.com',
     ],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -53,6 +52,14 @@ app.use(express.json());
 // Routes
 app.post('/api/tickets/purchase', ticketController.createTicket);
 app.post('/api/tickets/verify', ticketController.verifyTicket);
+app.post('/api/tickets/purchase', ticketController.createTicket);
+app.post('/api/tickets/verify', ticketController.verifyTicket);
+app.post('/api/admin/generate-ticket', ticketController.generateTicket);
+app.get('/api/tickets/info/:ticketId', ticketController.getTicketInfo);
+app.get('/api/admin/recent-tickets', ticketController.getRecentTickets);
+app.get('/api/admin/trash-tickets', ticketController.getTrashTickets);
+app.put('/api/admin/restore-ticket/:id', ticketController.restoreTicket);
+
 
 // Database Sync and Server Initialization
 // Defaulting to 8080 as configured in your frontend requests

@@ -26,7 +26,13 @@ const Ticket = sequelize.define('Ticket', {
     paymentStatus: {
         type: DataTypes.STRING,
         defaultValue: 'completed', // Assuming ticket is only created after successful payment
+    },
+
+    status: {
+        type: DataTypes.STRING,
+        defaultValue: 'VALID' // Par défaut on considère le pass comme valide
     }
+
 }, {
     timestamps: true, // Automatically adds createdAt and updatedAt
 });
