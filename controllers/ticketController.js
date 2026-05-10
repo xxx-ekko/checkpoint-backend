@@ -136,7 +136,8 @@ const generateTicket = async (req, res) => {
         });
 
         // 3. Format the URL using the REAL database ID (newTicket.id)
-        const scannerUrl = `http://localhost:5173/scanner/${newTicket.id}`;
+        const frontendUrl = process.env.FRONTEND_URL;
+        const scannerUrl = `${frontendUrl}/scanner/${ticketId}`;
 
         // 4. Generate the QR code image
         const qrCodeImage = await QRCode.toDataURL(scannerUrl, {
