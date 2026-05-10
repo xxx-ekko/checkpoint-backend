@@ -59,6 +59,13 @@ app.get('/api/tickets/info/:ticketId', ticketController.getTicketInfo);
 app.get('/api/admin/recent-tickets', ticketController.getRecentTickets);
 app.get('/api/admin/trash-tickets', ticketController.getTrashTickets);
 app.put('/api/admin/restore-ticket/:id', ticketController.restoreTicket);
+app.get('/', (req, res) => {
+    res.json({
+        status: 'online',
+        message: 'Le Checkpoint API est opérationnelle 🚀',
+        version: '1.0.0'
+    });
+});
 
 
 // Database Sync and Server Initialization
