@@ -35,11 +35,11 @@ app.use('/api/', apiLimiter);
 const corsOptions = {
     origin: [
         'http://localhost:5173',
-        'https://localhost:5173',
         'http://192.168.1.18:5173',
         'https://www.le-checkpoint.com',
+        'https://le-checkpoint.com'
     ],
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
